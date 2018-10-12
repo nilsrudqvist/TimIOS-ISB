@@ -1,0 +1,7 @@
+.Rhistory
+*.Rproj
+.Rproj.user
+.httr-oauth
+*~
+.DS_Store
+rsconnect
