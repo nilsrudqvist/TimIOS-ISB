@@ -13,51 +13,28 @@ suppressMessages(library(tidyverse))
 suppressMessages(library(xtable))
 suppressMessages(library(pheatmap))
 suppressMessages(library(RColorBrewer))
+suppressMessages(library(ggpubr))
 ```
 
 
 ```{r echo=F,warning=FALSE, message=FALSE}
-clin <- read_tsv("../data/Combined_Clinical.df.tsv")
-ge <- read_tsv("../data/Combined_GE.df.tsv")
-gem <- as.matrix(ge[,2:ncol(ge)]) ; rownames(gem) <- ge$Gene
-## ge samples in natural numeric order, clin samples in alphanumeric sort
-clin$sample <- factor(clin$sample,levels=colnames(gem))
-ge.long <- gather(ge,sample,value,-Gene)
-ge.long$sample <- factor(ge.long$sample,levels=colnames(gem))
-df <- left_join(clin,ge.long,by="sample")
-```
-
-```{r echo=F,warning=FALSE, message=FALSE}
-df <- df %>% mutate(log10_value=log10(value+1))
-
-# sample.gene.counts <- df %>% group_by(sample) %>% summarize(length(which(!is.na(value))))
-# Prat2017 has only 538 values
-
-dataset.summary.stats <- df %>% group_by(dataset) %>% 
-  summarize(median=median(log10_value,na.rm=T),mad=mad(log10_value,na.rm=T),
-            mean=mean(log10_value,na.rm=T),sd=sd(log10_value,na.rm=T))
-
-# scale by standardization
-dfext <- right_join(df,dataset.summary.stats,by="dataset") %>% mutate(scaled_value=(log10_value-mean)/sd)
-
-# scale by median only 
-#dfext <- right_join(df,dataset.summary.stats,by="dataset") %>% #mutate(scaled_value=log10_value/median)
-
+load("../data/df.all.RData")
+df <- df.all
 ```
 
 Scale data by dataset mean and standard deviation
 
 ```{r echo=F,warning=FALSE, message=FALSE}
-ggplot(dfext,aes(x=sample,y=scaled_value)) + geom_boxplot(outlier.shape=NA) + theme_classic()
+ggplot(df,aes(x=sample,y=scaled_value)) + geom_boxplot(outlier.shape=NA) + theme_classic()
 ```
 ```{r echo=F,warning=FALSE, message=FALSE}
-ggplot(dfext,aes(x=dataset,y=scaled_value)) + geom_boxplot(outlier.shape=NA) + theme_classic()
+ggplot(df,aes(x=dataset,y=scaled_value)) + geom_boxplot(outlier.shape=NA) + theme_classic()
 ```
 
 
 ```{r echo=F,warning=FALSE, message=FALSE}
-plot_gene <- function(df,gene_of_interest){
-  df %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset,objective_response) %>%
+plot_gene <- function(d,gene_of_interest){
+  d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset,objective_response) %>%
   .[complete.cases(.),] %>%
   ggplot(aes(x=dataset,y=scaled_value,fill=objective_response)) +   geom_boxplot(outlier.shape = NA) + ggtitle(gene_of_interest) +
   geom_point(position=position_jitterdodge(0.1),shape=16,size=1) +
@@ -67,7 +44,26 @@ plot_gene <- function(df,gene_of_interest){
 
 
 ```{r echo=F,warning=FALSE, message=FALSE}
-plot_gene(dfext,"CTLA4")
-plot_gene(dfext,"PDCD1")
-plot_gene(dfext,"CD274")
+plot_gene(df,"CTLA4")
+plot_gene(df,"PDCD1")
+plot_gene(df,"CD274")
 ```
+
+
+```{r echo=F,warning=FALSE, message=FALSE}
+plot_gene_stats <- function (d,gene_of_interest){
+  d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset,objective_response) %>% .[complete.cases(.),] %>% 
+ggboxplot(x = "dataset", y = "scaled_value",
+          add = "jitter",color="objective_response") + stat_compare_means(aes(group =objective_response),label = "p.format") +
+    ggtitle(gene_of_interest)
+}
+```
+
+
+```{r echo=F,warning=FALSE, message=FALSE}
+plot_gene_stats(df,"CTLA4")
+plot_gene_stats(df,"PDCD1")
+plot_gene_stats(df,"CD274")
+```
+
+
