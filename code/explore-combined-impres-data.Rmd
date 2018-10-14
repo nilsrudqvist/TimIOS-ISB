@@ -27,9 +27,6 @@ Scale data by dataset mean and standard deviation
 ```{r echo=F,warning=FALSE, message=FALSE}
 ggplot(df,aes(x=sample,y=scaled_value)) + geom_boxplot(outlier.shape=NA) + theme_classic()
 ```
-```{r echo=F,warning=FALSE, message=FALSE}
-ggplot(df,aes(x=dataset,y=scaled_value)) + geom_boxplot(outlier.shape=NA) + theme_classic()
-```
 
 
 ```{r echo=F,warning=FALSE, message=FALSE}
@@ -50,13 +47,18 @@ plot_gene(df,"CD274")
 ```
 
 
-```{r echo=F,warning=FALSE, message=FALSE}
+```{r echo=F,warning=FALSE, message=FALSE} 
+## Uses ggpubr to add pairwise p-values
 plot_gene_stats <- function (d,gene_of_interest){
   d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset,objective_response) %>% .[complete.cases(.),] %>% 
-ggboxplot(x = "dataset", y = "scaled_value",
-          add = "jitter",color="objective_response") + stat_compare_means(aes(group =objective_response),label = "p.format") +
+ggboxplot(x = "dataset", y = "scaled_value",color="objective_response",add = "jitter") + 
+    stat_compare_means(aes(group =objective_response),label = "p.format") +
     ggtitle(gene_of_interest)
 }
+## Hmm, some package versions (?) do not correctly do the two-factor jitter
+## See http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/76-add-p-values-and-significance-levels-to-ggplots/
+## This should work
+## ggboxplot(ToothGrowth, x = "dose", y = "len", color = "supp", palette = "jco",add = "jitter")
 ```
 
 

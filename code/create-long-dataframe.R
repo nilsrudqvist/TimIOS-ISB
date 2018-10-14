@@ -1,6 +1,11 @@
+##
+##  Combine clinical and expression data into one long ('tidy') data frame
+##
+## run as source("code/create-long-dataframe.R") from project root
+
 library(tidyverse)
-clin <- read_tsv("../data/Combined_Clinical.df.tsv")
-ge <- read_tsv("../data/Combined_GE.df.tsv")
+clin <- read_tsv("data/Combined_Clinical.df.tsv")
+ge <- read_tsv("data/Combined_GE.df.tsv")
 gem <- as.matrix(ge[,2:ncol(ge)]) ; rownames(gem) <- ge$Gene
 ## ge samples in natural numeric order, clin samples in alphanumeric sort
 clin$sample <- factor(clin$sample,levels=colnames(gem))
