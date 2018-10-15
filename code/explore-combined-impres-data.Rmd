@@ -52,7 +52,7 @@ plot_gene(df,"CD274")
 plot_gene_stats <- function (d,gene_of_interest){
   d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset,objective_response) %>% .[complete.cases(.),] %>% 
 ggboxplot(x = "dataset", y = "scaled_value",color="objective_response",add = "jitter") + 
-    stat_compare_means(aes(group =objective_response),label = "p.format") +
+    stat_compare_means(aes(group =objective_response),label = "p.format",method = "t.test") +
     ggtitle(gene_of_interest)
 }
 ## Hmm, some package versions (?) do not correctly do the two-factor jitter
@@ -68,4 +68,40 @@ plot_gene_stats(df,"PDCD1")
 plot_gene_stats(df,"CD274")
 ```
 
+## Test gene list for differences in response
 
+```{r echo=F,warning=FALSE, message=FALSE}
+gois <- read_tsv(file="../data/curated_gene_list.txt")[[1]]
+## 551 of 715 gois have match IMPRES gene symbols
+```
+Of `r length(gois)` genes of interest, `r length(intersect(gois,unique(df$Gene)))` are represented by gene symbol in the IMPRES set.
+
+For each of those, compute ANOVA for linear model, with dataset and objective_response as effects.
+
+```{r echo=F,warning=FALSE, message=FALSE}
+d <- df %>% filter(Gene %in% gois) %>% select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
+
+dd <- d %>% split(.$Gene) %>%
+            map( ~ lm(scaled_value ~ dataset + objective_response, data=.)) %>%
+            map(anova) %>%
+            map(~. ["objective_response","Pr(>F)"]) %>%
+            unlist()
+
+```
+
+Lowest 10 p-values
+
+```{r results='asis', echo=FALSE}
+a <- as.matrix(head(sort(dd,decreasing =F),10));  colnames(a)  <- "P-value"
+print(xtable(a,digits=5),type='html')
+```
+
+
+Plots for top three
+
+
+```{r echo=F,warning=FALSE, message=FALSE}
+plot_gene_stats(df,"CCR7")
+plot_gene_stats(df,"CYFIP2")
+plot_gene_stats(df,"CXCL13")
+```
