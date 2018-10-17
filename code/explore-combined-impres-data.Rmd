@@ -70,6 +70,8 @@ plot_gene_stats(df,"CD274")
 
 ## Test gene list for differences in response
 
+### Longer list 
+
 ```{r echo=F,warning=FALSE, message=FALSE}
 gois <- read_tsv(file="../data/curated_gene_list.txt")[[1]]
 ## 551 of 715 gois have match IMPRES gene symbols
@@ -104,4 +106,40 @@ Plots for top three
 plot_gene_stats(df,"CCR7")
 plot_gene_stats(df,"CYFIP2")
 plot_gene_stats(df,"CXCL13")
+```
+### More focused list
+
+```{r echo=F,warning=FALSE, message=FALSE}
+gois <- read_tsv(file="../data/focused_gene_list.txt")[[1]]
+```
+Of `r length(gois)` genes of interest, `r length(intersect(gois,unique(df$Gene)))` are represented by gene symbol in the IMPRES set.
+
+For each of those, compute ANOVA for linear model, with dataset and objective_response as effects.
+
+```{r echo=F,warning=FALSE, message=FALSE}
+d <- df %>% filter(Gene %in% gois) %>% select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
+
+dd <- d %>% split(.$Gene) %>%
+            map( ~ lm(scaled_value ~ dataset + objective_response, data=.)) %>%
+            map(anova) %>%
+            map(~. ["objective_response","Pr(>F)"]) %>%
+            unlist()
+
+```
+
+Lowest 10 p-values
+
+```{r results='asis', echo=FALSE}
+a <- as.matrix(head(sort(dd,decreasing =F),10));  colnames(a)  <- "P-value"
+print(xtable(a,digits=5),type='html')
+```
+
+
+Plots for top three
+
+
+```{r echo=F,warning=FALSE, message=FALSE}
+plot_gene_stats(df,"PDCD1")
+plot_gene_stats(df,"CXCR3")
+plot_gene_stats(df,"TIGIT")
 ```
