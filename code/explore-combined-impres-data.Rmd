@@ -20,6 +20,7 @@ suppressMessages(library(ggpubr))
 ```{r echo=F,warning=FALSE, message=FALSE}
 load("../data/df.all.RData")
 df <- df.all
+df <- df %>% filter(timepoint == 'pre')
 ```
 
 Scale data by dataset mean and standard deviation
@@ -27,7 +28,6 @@ Scale data by dataset mean and standard deviation
 ```{r echo=F,warning=FALSE, message=FALSE}
 ggplot(df,aes(x=sample,y=scaled_value)) + geom_boxplot(outlier.shape=NA) + theme_classic()
 ```
-
 
 ```{r echo=F,warning=FALSE, message=FALSE}
 plot_gene <- function(d,gene_of_interest){
@@ -39,20 +39,12 @@ plot_gene <- function(d,gene_of_interest){
 }
 ```
 
-
-```{r echo=F,warning=FALSE, message=FALSE}
-plot_gene(df,"CTLA4")
-plot_gene(df,"PDCD1")
-plot_gene(df,"CD274")
-```
-
-
 ```{r echo=F,warning=FALSE, message=FALSE} 
 ## Uses ggpubr to add pairwise p-values
 plot_gene_stats <- function (d,gene_of_interest){
   d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset,objective_response) %>% .[complete.cases(.),] %>% 
 ggboxplot(x = "dataset", y = "scaled_value",color="objective_response",add = "jitter") + 
-    stat_compare_means(aes(group =objective_response),label = "p.format",method = "t.test") +
+    stat_compare_means(aes(group=objective_response),label = "p.format",method = "t.test") +
     ggtitle(gene_of_interest)
 }
 ## Hmm, some package versions (?) do not correctly do the two-factor jitter
@@ -61,27 +53,74 @@ ggboxplot(x = "dataset", y = "scaled_value",color="objective_response",add = "ji
 ## ggboxplot(ToothGrowth, x = "dose", y = "len", color = "supp", palette = "jco",add = "jitter")
 ```
 
-
-```{r echo=F,warning=FALSE, message=FALSE}
-plot_gene_stats(df,"CTLA4")
-plot_gene_stats(df,"PDCD1")
-plot_gene_stats(df,"CD274")
+```{r echo=F,warning=FALSE, message=FALSE} 
+## Uses ggpubr to add pairwise p-values
+## Anonymize datasets
+plot_gene_stats_anon <- function (d,gene_of_interest){
+  d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset,objective_response) %>% .[complete.cases(.),] %>% 
+ggboxplot(x = "dataset", y = "scaled_value", color="objective_response", add = "jitter") + 
+    stat_compare_means(aes(group=objective_response),label = "p.format", method = "t.test") +
+    ggtitle(paste(gene_of_interest, 
+                  " (anova, p = ", 
+                  d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset,objective_response) %>% .[complete.cases(.),] %>% 
+                    lm(scaled_value ~ dataset + objective_response, data=.) %>% anova() %>% data.frame() %>% .[2,5] %>% round(5), ")", sep = "")) +
+    scale_x_discrete(name ="Different datasets", labels=c("Hugo2016" = "Dataset 1", "Prat2017" = "Dataset 2", "Riaz2017" = "Dataset 3", "TCGA" = "Dataset 4", "VanAllen2015" = "Dataset 5")) + 
+    ylab('Scaled gene expression')
+}
+## Hmm, some package versions (?) do not correctly do the two-factor jitter
+## See http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/76-add-p-values-and-significance-levels-to-ggplots/
+## This should work
+## ggboxplot(ToothGrowth, x = "dose", y = "len", color = "supp", palette = "jco",add = "jitter")
 ```
 
 ## Test gene list for differences in response
-
 ### Longer list 
 
-```{r echo=F,warning=FALSE, message=FALSE}
-gois <- read_tsv(file="../data/curated_gene_list.txt")[[1]]
+```{r echo=F, warning=FALSE, message=FALSE}
+gois_long <- read_tsv(file="../data/curated_gene_list.txt")[[1]]
 ## 551 of 715 gois have match IMPRES gene symbols
 ```
-Of `r length(gois)` genes of interest, `r length(intersect(gois,unique(df$Gene)))` are represented by gene symbol in the IMPRES set.
+Of `r length(gois_long)` genes of interest, `r length(intersect(gois_long,unique(df$Gene)))` are represented by gene symbol in the IMPRES set.
 
 For each of those, compute ANOVA for linear model, with dataset and objective_response as effects.
 
 ```{r echo=F,warning=FALSE, message=FALSE}
-d <- df %>% filter(Gene %in% gois) %>% select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
+d <- df %>% filter(Gene %in% gois_long) %>% select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
+dd <- d %>% split(.$Gene) %>%
+            map( ~ lm(scaled_value ~ dataset + objective_response, data=.)) %>%
+            map(anova) %>%
+            map(~. ["objective_response","Pr(>F)"]) %>%
+            unlist()
+
+```
+
+Lowest p-values
+
+```{r results='asis', echo=FALSE}
+a <- as.matrix(head(sort(dd,decreasing =F),20));  colnames(a)  <- "P-value"
+print(xtable(a,digits=5),type='html')
+```
+
+Plots for top genes
+
+```{r echo=F, message=FALSE, warning=FALSE, paged.print=TRUE}
+for(i in row.names(a)){
+  print(plot_gene_stats_anon(df, i))
+}
+```
+
+### More focused list for SITC
+
+```{r echo=F,warning=FALSE, message=FALSE}
+gois_short <- read_tsv(file="../data/focused_gene_list.txt")[[1]]
+```
+
+Of `r length(gois_short)` genes of interest, `r length(intersect(gois_short,unique(df$Gene)))` are represented by gene symbol in the IMPRES set.
+
+For each of those, compute ANOVA for linear model, with dataset and objective_response as effects.
+
+```{r echo=F,warning=FALSE, message=FALSE}
+d <- df %>% filter(Gene %in% gois_short) %>% select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
 
 dd <- d %>% split(.$Gene) %>%
             map( ~ lm(scaled_value ~ dataset + objective_response, data=.)) %>%
@@ -91,55 +130,15 @@ dd <- d %>% split(.$Gene) %>%
 
 ```
 
-Lowest 10 p-values
-
+P-values for the genes of interest
 ```{r results='asis', echo=FALSE}
-a <- as.matrix(head(sort(dd,decreasing =F),10));  colnames(a)  <- "P-value"
+a <- as.matrix(sort(dd,decreasing = F));  colnames(a)  <- "P-value"
 print(xtable(a,digits=5),type='html')
 ```
 
-
-Plots for top three
-
-
+Plots for each gene
 ```{r echo=F,warning=FALSE, message=FALSE}
-plot_gene_stats(df,"CCR7")
-plot_gene_stats(df,"CYFIP2")
-plot_gene_stats(df,"CXCL13")
-```
-### More focused list
-
-```{r echo=F,warning=FALSE, message=FALSE}
-gois <- read_tsv(file="../data/focused_gene_list.txt")[[1]]
-```
-Of `r length(gois)` genes of interest, `r length(intersect(gois,unique(df$Gene)))` are represented by gene symbol in the IMPRES set.
-
-For each of those, compute ANOVA for linear model, with dataset and objective_response as effects.
-
-```{r echo=F,warning=FALSE, message=FALSE}
-d <- df %>% filter(Gene %in% gois) %>% select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
-
-dd <- d %>% split(.$Gene) %>%
-            map( ~ lm(scaled_value ~ dataset + objective_response, data=.)) %>%
-            map(anova) %>%
-            map(~. ["objective_response","Pr(>F)"]) %>%
-            unlist()
-
-```
-
-Lowest 10 p-values
-
-```{r results='asis', echo=FALSE}
-a <- as.matrix(head(sort(dd,decreasing =F),10));  colnames(a)  <- "P-value"
-print(xtable(a,digits=5),type='html')
-```
-
-
-Plots for top three
-
-
-```{r echo=F,warning=FALSE, message=FALSE}
-plot_gene_stats(df,"PDCD1")
-plot_gene_stats(df,"CXCR3")
-plot_gene_stats(df,"TIGIT")
+for(i in row.names(a)){
+  print(plot_gene_stats_anon(df, i))
+}
 ```
