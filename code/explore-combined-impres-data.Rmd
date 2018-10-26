@@ -1,11 +1,9 @@
 ---
 title: "Explore response data!"
 output: 
-  html_notebook:
+  github_document:
     toc: yes
     toc_depth: 2
-    toc_float: true
-    theme: cerulean
 ---
 
 ```{r echo=FALSE, warning=FALSE, message=F}
@@ -14,6 +12,7 @@ suppressMessages(library(xtable))
 suppressMessages(library(pheatmap))
 suppressMessages(library(RColorBrewer))
 suppressMessages(library(ggpubr))
+
 ```
 
 ```{r echo=F,warning=FALSE, message=FALSE, results='asis'}
