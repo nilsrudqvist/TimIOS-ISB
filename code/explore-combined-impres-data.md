@@ -4,7 +4,7 @@ Explore response data!
 -   [Test gene list for differences in response](#test-gene-list-for-differences-in-response)
 
 <!-- html table generated in R 3.5.1 by xtable 1.8-3 package -->
-<!-- Fri Oct 26 10:37:19 2018 -->
+<!-- Thu Nov  1 11:35:48 2018 -->
 <table border="1">
 <tr>
 <th>
@@ -52,7 +52,7 @@ Dataset 2
 Riaz2017
 </td>
 <td>
-CTLA4
+PD1
 </td>
 <td>
 Dataset 3
@@ -106,7 +106,7 @@ For each of those, compute ANOVA for linear model, with dataset and objective\_r
 Lowest p-values
 
 <!-- html table generated in R 3.5.1 by xtable 1.8-3 package -->
-<!-- Fri Oct 26 10:37:26 2018 -->
+<!-- Thu Nov  1 11:35:55 2018 -->
 <table border="1">
 <tr>
 <th>
@@ -286,7 +286,7 @@ Of 34 genes of interest, 27 are represented by gene symbol in the IMPRES set.
 
 For each of those, compute ANOVA for linear model, with dataset and objective\_response as effects.
 
-P-values for the genes of interest <!-- html table generated in R 3.5.1 by xtable 1.8-3 package --> <!-- Fri Oct 26 10:37:41 2018 -->
+P-values for the genes of interest <!-- html table generated in R 3.5.1 by xtable 1.8-3 package --> <!-- Thu Nov  1 11:36:09 2018 -->
 <table border="1">
 <tr>
 <th>
@@ -412,7 +412,7 @@ CXCL10
 THBD
 </td>
 <td align="right">
-0.16915
+0.16916
 </td>
 </tr>
 <tr>
@@ -444,7 +444,7 @@ CCL5
 FLT3LG
 </td>
 <td align="right">
-0.32395
+0.32396
 </td>
 </tr>
 <tr>

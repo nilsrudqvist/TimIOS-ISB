@@ -12,7 +12,6 @@ suppressMessages(library(xtable))
 suppressMessages(library(pheatmap))
 suppressMessages(library(RColorBrewer))
 suppressMessages(library(ggpubr))
-
 ```
 
 ```{r echo=F,warning=FALSE, message=FALSE, results='asis'}
@@ -21,10 +20,9 @@ df <- df.all
 df <- df %>% filter(timepoint == 'pre')
 df <- df %>% merge(., c(Hugo2016 = "Dataset 1", Prat2017 = "Dataset 2", Riaz2017 = "Dataset 3", TCGA = "Dataset 4", VanAllen2015 = "Dataset 5"), by.x = 'dataset', by.y = 'row.names', all.x = T)
 colnames(df)[21] <- 'dataset_anon'
-d_stats <- df %>% split(.$dataset) %>% map(~ unique(select(.,sample, dataset, treatment, dataset_anon))) %>% map(~ cbind(unique(select(., dataset, treatment, dataset_anon)), samples = dim(.)[1])) %>% do.call(rbind,.) 
+d_stats <- df %>% split(.$dataset) %>% map(~ unique(dplyr::select(.,sample, dataset, treatment, dataset_anon))) %>% map(~ cbind(unique(dplyr::select(., dataset, treatment, dataset_anon)), samples = dim(.)[1])) %>% do.call(rbind,.) 
 print(xtable(x = d_stats[,-1]),type='html')
 ```
-
 
 Scale data by dataset mean and standard deviation
 
@@ -35,7 +33,7 @@ ggplot(df,aes(x=sample,y=scaled_value)) + geom_boxplot(outlier.shape=NA) + theme
 ```{r echo=F,warning=FALSE, message=FALSE} 
 ## Uses ggpubr to add pairwise p-values
 plot_gene_stats <- function (d,gene_of_interest){
-  d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset,objective_response) %>% .[complete.cases(.),] %>% 
+  d %>% filter(Gene==gene_of_interest) %>% dplyr::select(scaled_value,dataset,objective_response) %>% .[complete.cases(.),] %>% 
 ggboxplot(x = "dataset", y = "scaled_value",color="objective_response",add = "jitter") + 
     stat_compare_means(aes(group=objective_response),label = "p.format",method = "t.test") +
     ggtitle(gene_of_interest)
@@ -50,12 +48,12 @@ ggboxplot(x = "dataset", y = "scaled_value",color="objective_response",add = "ji
 ## Uses ggpubr to add pairwise p-values
 ## Anonymize datasets
 plot_gene_stats_anon <- function (d,gene_of_interest){
-  d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset_anon,objective_response) %>% .[complete.cases(.),] %>% 
+  d %>% filter(Gene==gene_of_interest) %>% dplyr::select(scaled_value,dataset_anon,objective_response) %>% .[complete.cases(.),] %>% 
 ggboxplot(x = "dataset_anon", y = "scaled_value", color="objective_response", add = "jitter") + 
     stat_compare_means(aes(group=objective_response),label = "p.format", method = "t.test") +
     ggtitle(paste(gene_of_interest, 
                   " (anova, p = ", 
-                  d %>% filter(Gene==gene_of_interest) %>% select(scaled_value,dataset_anon,objective_response) %>% .[complete.cases(.),] %>% 
+                  d %>% filter(Gene==gene_of_interest) %>% dplyr::select(scaled_value,dataset_anon,objective_response) %>% .[complete.cases(.),] %>% 
                     lm(scaled_value ~ dataset_anon + objective_response, data=.) %>% anova() %>% data.frame() %>% .[2,5] %>% round(5), ")", sep = "")) +
     ylab('Scaled gene expression') + xlab('')
 }
@@ -77,7 +75,7 @@ Of `r length(gois_long)` genes of interest, `r length(intersect(gois_long,unique
 For each of those, compute ANOVA for linear model, with dataset and objective_response as effects.
 
 ```{r echo=F,warning=FALSE, message=FALSE}
-d <- df %>% filter(Gene %in% gois_long) %>% select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
+d <- df %>% filter(Gene %in% gois_long) %>% dplyr::select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
 dd <- d %>% split(.$Gene) %>%
             map( ~ lm(scaled_value ~ dataset + objective_response, data=.)) %>%
             map(anova) %>%
@@ -112,7 +110,7 @@ Of `r length(gois_short)` genes of interest, `r length(intersect(gois_short,uniq
 For each of those, compute ANOVA for linear model, with dataset and objective_response as effects.
 
 ```{r echo=F,warning=FALSE, message=FALSE}
-d <- df %>% filter(Gene %in% gois_short) %>% select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
+d <- df %>% filter(Gene %in% gois_short) %>% dplyr::select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
 
 dd <- d %>% split(.$Gene) %>%
             map( ~ lm(scaled_value ~ dataset + objective_response, data=.)) %>%

@@ -4,8 +4,8 @@
 ## run as source("code/create-long-dataframe.R") from project root
 
 library(tidyverse)
-clin <- read_tsv("data/Combined_Clinical.df.tsv")
-ge <- read_tsv("data/Combined_GE.df.tsv")
+clin <- read_tsv("../data/Combined_Clinical.df.tsv")
+ge <- read_tsv("../data/Combined_GE.df.tsv")
 gem <- as.matrix(ge[,2:ncol(ge)]) ; rownames(gem) <- ge$Gene
 ## ge samples in natural numeric order, clin samples in alphanumeric sort
 clin$sample <- factor(clin$sample,levels=colnames(gem))
@@ -21,5 +21,5 @@ dfext <- right_join(df,dataset.summary.stats,by="dataset") %>% mutate(scaled_val
 # scale by median only 
 #dfext <- right_join(df,dataset.summary.stats,by="dataset") %>% #mutate(scaled_value=log10_value/median)
 df.all <- dfext
-save(df.all,file="data/df.all.RData")
+save(df.all,file="../data/df.all.RData")
 
