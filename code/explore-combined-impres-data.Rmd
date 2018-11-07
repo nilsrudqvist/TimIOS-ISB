@@ -50,7 +50,8 @@ ggboxplot(x = "dataset", y = "scaled_value",color="objective_response",add = "ji
 plot_gene_stats_anon <- function (d,gene_of_interest){
   d %>% filter(Gene==gene_of_interest) %>% dplyr::select(scaled_value,dataset_anon,objective_response) %>% .[complete.cases(.),] %>% 
 ggboxplot(x = "dataset_anon", y = "scaled_value", color="objective_response", add = "jitter") + 
-    stat_compare_means(aes(group=objective_response),label = "p.format", method = "t.test") +
+    stat_compare_means(aes(group=objective_response), label = "p.format", method = "t.test", 
+                       label.y = df %>% filter(Gene==gene_of_interest) %>% dplyr::select(scaled_value,dataset_anon,objective_response) %>% .[complete.cases(.),] %>% .$scaled_value %>% max()*1.5) +
     ggtitle(paste(gene_of_interest, 
                   " (anova, p = ", 
                   d %>% filter(Gene==gene_of_interest) %>% dplyr::select(scaled_value,dataset_anon,objective_response) %>% .[complete.cases(.),] %>% 
@@ -64,6 +65,44 @@ ggboxplot(x = "dataset_anon", y = "scaled_value", color="objective_response", ad
 ```
 
 ## Test gene list for differences in response
+
+### Just plot a couple of genes of interest for sitc presentation
+
+```{r echo=F, warning=FALSE, message=FALSE}
+sitc_gois <- c('PDCD1','CD274','CTLA4','HAVCR2','LAG3','CD8A','GZMB','PRF1')
+```
+
+Of `r length(sitc_gois)` genes of interest, `r length(intersect(sitc_gois,unique(df$Gene)))` are represented by gene symbol in the IMPRES set.
+
+For each of those, compute ANOVA for linear model, with dataset and objective_response as effects.
+
+```{r echo=F,warning=FALSE, message=FALSE}
+d <- df %>% filter(Gene %in% sitc_gois) %>% dplyr::select(Gene,scaled_value,dataset,objective_response) %>% .[complete.cases(.),] 
+
+dd <- d %>% split(.$Gene) %>%
+            map( ~ lm(scaled_value ~ dataset + objective_response, data=.)) %>%
+            map(anova) %>%
+            map(~. ["objective_response","Pr(>F)"]) %>%
+            unlist()
+
+```
+
+P-values for the genes of interest
+```{r results='asis', echo=FALSE}
+a <- as.matrix(sort(dd,decreasing = F));  colnames(a)  <- "P-value"
+print(xtable(a,digits=5),type='html')
+```
+
+Plots for each gene
+```{r echo=F,warning=FALSE, message=FALSE}
+for(i in row.names(a)){
+  #pdf(paste("../result/",i,".pdf", sep = ""), width = 5, height = 4)
+  print(plot_gene_stats_anon(df, i))
+  #dev.off()
+}
+```
+
+
 ### Longer list 
 
 ```{r echo=F, warning=FALSE, message=FALSE}
@@ -99,7 +138,7 @@ for(i in row.names(a)){
 }
 ```
 
-### More focused list for SITC
+### More focused list
 
 ```{r echo=F,warning=FALSE, message=FALSE}
 gois_short <- read_tsv(file="../data/focused_gene_list.txt")[[1]]
